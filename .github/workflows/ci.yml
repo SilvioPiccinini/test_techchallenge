@@ -24,10 +24,12 @@ jobs:
           go mod tidy
           go vet ./...
           go test ./... -race -cover
-      - name: SAST - gosec
+      - name: Install gosec (via go install)
         run: |
-          curl -sSfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b /usr/local/bin latest
-          gosec ./...
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+      - name: SAST - gosec
+        run: gosec ./...
       - name: SAST - Semgrep (Go)
         uses: returntocorp/semgrep-action@v1
         with:
