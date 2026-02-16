@@ -2,38 +2,55 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
-	"os"
+	"time"
 )
 
-type health struct {
-	Status string `json:"status"`
+type HealthResponse struct {
+	Status string json:"status"
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	
-	data, err := json.Marshal(health{Status: "ok"})
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(os.Stderr, "Error marshaling response: %v\n", err)
+	// Permite apenas GET
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
-	if _, err := w.Write(data); err != nil {
-		fmt.Fprintf(os.Stderr, "Error writing response: %v\n", err)
+
+	// Limita tamanho do body (proteção extra)
+	r.Body = http.MaxBytesReader(w, r.Body, 1024)
+	defer r.Body.Close()
+
+	// Headers de segurança
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("X-Frame-Options", "DENY")
+	w.Header().Set("Cache-Control", "no-store")
+
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(HealthResponse{Status: "ok"}); err != nil {
+		log.Printf("error encoding health response: %v", err)
 	}
 }
 
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", healthHandler)
-	
-	fmt.Println("core-go listening on :8080")
-	
-	if err := http.ListenAndServe(":8080", mux); err != nil {
-		fmt.Fprintf(os.Stderr, "Server error: %v\n", err)
-		os.Exit(1)
+
+	server := &http.Server{
+		Addr:              ":8080",
+		Handler:           mux,
+		ReadTimeout:       5 * time.Second,
+		ReadHeaderTimeout: 2 * time.Second,
+		WriteTimeout:      5 * time.Second,
+		IdleTimeout:       30 * time.Second,
+	}
+
+	log.Println("core-go listening on :8080")
+
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("server error: %v", err)
 	}
 }
