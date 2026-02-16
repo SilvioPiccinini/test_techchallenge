@@ -5,9 +5,14 @@ type health struct{ Status string `json:"status"` }
 func main(){
   http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request){
     w.Header().Set("Content-Type","application/json")
-    if err := json.NewEncoder(w).Encode(health{Status:"ok"}); err != nil {
+    data, err := json.Marshal(health{Status:"ok"})
+    if err != nil {
       w.WriteHeader(http.StatusInternalServerError)
-      log.Printf("Error encoding health response: %v", err)
+      log.Printf("Error marshaling health response: %v", err)
+      return
+    }
+    if _, err := w.Write(data); err != nil {
+      log.Printf("Error writing response: %v", err)
       return
     }
   })
