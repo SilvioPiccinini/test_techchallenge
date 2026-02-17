@@ -1,0 +1,2 @@
+- Segredos nunca em Git.
+- Gates de CI bloqueiam PR com falhas críticas.
