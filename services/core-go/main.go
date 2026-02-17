@@ -24,7 +24,9 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(HealthResponse{Status: "ok"})
+	if err := json.NewEncoder(w).Encode(HealthResponse{Status: "ok"}); err != nil {
+		log.Printf("erro ao encodar resposta de health check: %v", err)
+	}
 }
 
 func main() {
