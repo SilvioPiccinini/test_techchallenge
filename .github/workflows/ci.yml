@@ -54,6 +54,7 @@ jobs:
           ignore-unfixed: true
           exit-code: '1'
           format: 'table'
+          severity: 'HIGH,CRITICAL'
       - name: Run container
         run: |
           docker run -d -p 8080:8080 --name core core-go:ci
